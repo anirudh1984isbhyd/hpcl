@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HPCL Digital Launch – Powered by SingleInterface</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            position: relative;
+        }
+        #sidebar {
+            width: 320px;
+            height: 100%;
+            background-color: #f5f5f5;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        #sidebar-toggle {
+            position: absolute;
+            left: 320px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 60px;
+            background-color: white;
+            border-radius: 0 4px 4px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+        .sidebar-collapsed {
+            margin-left: -320px;
+        }
+        .toggle-collapsed {
+            left: 0 !important;
+        }
+        .sidebar-header {
+            padding: 15px;
+            background-color: #0041a3;
+            color: white;
+        }
+        .sidebar-content {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .search-container {
+            margin-bottom: 15px;
+        }
+        #search-box {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .control-button {
+            background-color: #0041a3;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .cluster-option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .metrics-panel {
+            background-color: #eef2f9;
+            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .metrics-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #0041a3;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .metrics-title i {
+            margin-right: 5px;
+        }
+        .metric-grid {
+            display: grid;
+            /*grid-template-columns: 1fr 1fr;*/
+            gap: 10px;
+        }
+        .metric-card {
+            background-color: white;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .metric-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0041a3;
+            margin-bottom: 2px;
+        }
+        .metric-label {
+            font-size: 11px;
+            color: #666;
+        }
+        .region-filter {
+            margin-bottom: 15px;
+        }
+        #region-select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .location-list {
+            list-style: none;
+            overflow-y: auto;
+        }
+        .location-list li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
+        .location-list li:hover {
+            background-color: #f0f0f0;
+        }
+        .location-list li.highlight {
+            background-color: #e0e0ff;
+        }
+        #map {
+            flex-grow: 1;
+            height: 100%;
+        }
+        .custom-popup {
+            padding: 5px 10px;
+        }
+        .location-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .location-address {
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+        .location-link {
+            display: inline-block;
+            background-color: #0041a3;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: 1.0em;
+            margin-top: 5px;
+            color:#ffffff!important;
+        }
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+        .loading-content {
+            text-align: center;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0041a3;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .map-error {
+            padding: 20px;
+            text-align: center;
+            color: #d32f2f;
+        }
+</style>
+</head>
+
+<body>
+<div id="loadingOverlay">
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <p>Loading HPCL Digital Locations...</p>
+    </div>
+</div>
+
+<div id="sidebar">
+    <div class="sidebar-header">
+        <h2>Hindustan Petroleum Corporation Limited</h2>
+    </div>
+    <div class="sidebar-content">
+        <div class="search-container">
+            <input type="text" id="search-box" placeholder="Search locations...">
+        </div>
+
+        <div class="metrics-panel">
+            <div class="metrics-title">
+                <i class="fas fa-chart-bar"></i> Dashboard Metrics
+            </div>
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-value" id="total-stations">0</div>
+                    <div class="metric-label">Total Locations</div>
+                </div>
+                <!-- <div class="metric-card">
+                    <div class="metric-value" id="total-regions">0</div>
+                    <div class="metric-label">Regions</div>
+                </div> -->
+                <!-- <div class="metric-card">
+                    <div class="metric-value" id="avg-traffic">0</div>
+                    <div class="metric-label">Avg. Traffic</div>
+                </div> -->
+                <!-- <div class="metric-card">
+                    <div class="metric-value" id="digital-coverage">0%</div>
+                    <div class="metric-label">Digital Coverage</div>
+                </div> -->
+            </div>
+        </div>
+
+        <div class="region-filter" style="display:none";>
+            <select id="region-select">
+                <option value="all">All Regions</option>
+                <!-- Regions will be populated by JavaScript -->
+            </select>
+        </div>
+
+        <div class="controls">
+            <button id="playButton" class="control-button"><i class="fas fa-play"></i></button>
+            <button id="resetButton" class="control-button"><i class="fas fa-sync-alt"></i></button>
+        </div>
+        <div class="cluster-option">
+            <input type="checkbox" id="clusterCheckbox" name="cluster" checked>
+            <label for="clusterCheckbox">Enable clustering</label>
+        </div>
+        <ul id="locationList" class="location-list"></ul>
+    </div>
+</div>
+
+<div id="sidebar-toggle">
+    <i class="fas fa-chevron-left"></i>
+</div>
+
+<div id="map"></div>
+
+<audio id="triumphSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3" preload="auto"></audio>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+<script>
+    // Sample location data with additional metrics - replace with your actual data
+
+    const locations = [
+        {
+            "name": "M/S Saish Petroleum, P D Mello",
+            "address": "Ground Floor, Mansion Road, 31 PD Mello Road, Near Elphinston Estate, Mumbai, Maharashtra, 400009",
+            "lat": 18.955918,
+            "lng": 72.842788,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-saish-petroleum-p-d-mello-petrol-pump-31-pd-mello-road-mumbai-375298/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/S Royal Auto Supply Co, Bhendi",
+            "address": "Ground Floor, Ibrahim Rehmatullah Road, Near JJ Hospital, Mumbai, Maharashtra, 400003",
+            "lat": 18.96105371,
+            "lng": 72.832124,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-royal-auto-supply-co-bhendi-ba-petrol-pump-ibrahim-rehmatullah-road-mumbai-375458/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Fuel Center - Sewree",
+            "address": "Ground Floor, Sewree East, Opposite BPT Gate No 6, Mumbai, Maharashtra, 400015",
+            "lat": 19.00549884,
+            "lng": 72.855990,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-fuel-center-sewree-petrol-pump-sewree-east-mumbai-387393/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Center - Chowpaty",
+            "address": "Ground Floor, Dadyseth Marg, Chowpatty, Near Babulnath Temple, Mumbai, Maharashtra, 400006",
+            "lat": 18.955191,
+            "lng": 72.807451,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-center-chowpaty-petrol-pump-chowpatty-mumbai-387396/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s Hp Service Centre, Sion",
+            "address": "No 90/91, Sion Trombay Road, Sion East, Opposite Bus Depot, Mumbai, Maharashtra, 400022",
+            "lat": 19.04409706,
+            "lng": 72.864607,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-hp-service-centre-sion-petrol-pump-sion-east-mumbai-387432/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s Western Petroleum, Vikhroli",
+            "address": "Ground Floor, LBS Marg, Mumbai Agra Road, Vikhroli, Near Railway Station, Mumbai, Maharashtra, 400079",
+            "lat": 19.11044774,
+            "lng": 72.925591,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-western-petroleum-vikhroli-petrol-pump-vikhroli-mumbai-387435/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s Zojwala Petroleums, Mulund",
+            "address": "Ground Floor, BR Road Junction, LBS Marg, Mulund West, Near Santoshi Mata Mandir, Mumbai, Maharashtra, 400080",
+            "lat": 19.18346695,
+            "lng": 72.948732,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-zojwala-petroleums-mulund-petrol-pump-mulund-west-mumbai-387460/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Gulati Automobiles",
+            "address": "No 239, SV Road, Bandra West, Opposite Bandra Talao, Mumbai, Maharashtra, 400050",
+            "lat": 19.05522472,
+            "lng": 72.837378,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-gulati-automobiles-petrol-pump-bandra-west-mumbai-387467/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Jivan Service Centre",
+            "address": "Ground Floor, JP Road, Andheri Versova Rd, Andheri West,, Mumbai, Maharashtra, 400058",
+            "lat": 19.128151,
+            "lng": 72.832281,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-jivan-service-centre-petrol-pump-andheri-west-mumbai-387479/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Center - BKC",
+            "address": "Bandra Kurla Complex,, Bandra East, Near ICICI Bank, Mumbai, Maharashtra, 400051",
+            "lat": 19.064691,
+            "lng": 72.860831,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-center-bkc-petrol-pump-bandra-east-mumbai-387497/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s AR Automobiles",
+            "address": "No 2, Jackeria Bunder Road, Cotton Green,, Mumbai, Maharashtra, 400033",
+            "lat": 18.98644697,
+            "lng": 72.842940,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-a-r-automobiles-petrol-pump-cotton-green-mumbai-387502/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Saikripa Auto & Oil Centre",
+            "address": "CTS No 449, Survey No 24, Malad Marve Road, Malwani, Rathodi,, Mumbai, Maharashtra, 400095",
+            "lat": 19.19688879,
+            "lng": 72.815168,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-saikripa-auto-oil-centre-petrol-pump-rathodi-mumbai-387503/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Adhoc Green Energy Station",
+            "address": "Ground Floor, Indira Docks, Mazgaon, Near Mobile Crane Section, Mumbai, Maharashtra, 400009",
+            "lat": 18.946081,
+            "lng": 72.841321,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-adhoc-green-energy-station-petrol-pump-mazgaon-mumbai-387512/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s American Auto Supply Co, Victoria Road",
+            "address": "Ground Floor, Mustafa Bazar, Sant Savata Marg, Victoria Road, Byculla, Opposite Rustom Baug, Mumbai, Maharashtra, 400027",
+            "lat": 18.97599347,
+            "lng": 72.836888,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-american-auto-supply-co-victoria-road-petrol-pump-byculla-mumbai-387515/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Centre, Chembur",
+            "address": "No 612, Sindhi Society, Sion Trombay Road, Chembur, Near Swastik Chambers, Mumbai, Maharashtra, 400071",
+            "lat": 19.05376188,
+            "lng": 72.889308,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-centre-chembur-petrol-pump-chembur-mumbai-387529/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Centre, Ville Parle",
+            "address": "No 97, SV Road, Vile Parle West, Near Nanavati Hospital, Mumbai, Maharashtra, 400056",
+            "lat": 19.09756535,
+            "lng": 72.839695,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-centre-vile-parle-petrol-pump-vile-parle-west-mumbai-387575/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Centre, Bandra",
+            "address": "No 267, SV Road, Bandra West, Opposite Lucky Hotel, Mumbai, Maharashtra, 400050",
+            "lat": 19.053561,
+            "lng": 72.837966,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-centre-bandra-petrol-pump-bandra-west-mumbai-387584/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s High Ride",
+            "address": "Ground Floor, Dr BA Road, Lalbaug, Opposite Digvijay Mill Chawl, Mumbai, Maharashtra, 400012",
+            "lat": 18.98953986,
+            "lng": 72.835544,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-high-ride-petrol-pump-lalbaug-mumbai-387589/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "HP Service Centre, Mulund",
+            "address": "Ground Floor, LBS Marg, Mulund West, Near Esic Hospital, Mumbai, Maharashtra, 400080",
+            "lat": 19.178153,
+            "lng": 72.944925,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-centre-mulund-petrol-pump-mulund-west-mumbai-387592/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s Janseva Petrol Service Station",
+            "address": "Ground Floor, Agra Road, Kurla West, Near Phoenix Market City, Mumbai, Maharashtra, 400070",
+            "lat": 19.08480791,
+            "lng": 72.885217,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-janseva-petrol-service-station-kurla-petrol-pump-kurla-west-mumbai-387637/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Maharashtra Ex-service Station Kurla",
+            "address": "Ground Floor, Charkop Link Road, Malvani, Opposite Ekta Nagar, Mumbai, Maharashtra, 400067",
+            "lat": 19.19873538,
+            "lng": 72.827603,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-maharashtra-ex-servicemen-corp-ltd-petrol-pump-malvani-mumbai-387661/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "M/s Vig Automobiles Vasinaka",
+            "address": "Ground Floor, RC Mahul Road, Ghatkopar Mahul Road, Vasi Naka, Chembur, Near Bharat Petroleum Monorail Station, Mumbai, Maharashtra, 400074",
+            "lat": 19.03467365,
+            "lng": 72.895895,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-vig-automobiles-vasinaka-petrol-pump-chembur-mumbai-387675/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+        {
+            "name": "Mahim Service Station",
+            "address": "Ground Floor, Lady Jamshedji Road, Mahim, Near Bank of Maharashtra, Mumbai, Maharashtra, 400016",
+            "lat": 19.03847027,
+            "lng": 72.842149,
+            "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-mahim-service-station-petrol-pump-mahim-mumbai-387677/Home",
+            "state": "Maharashtra",
+            "brandName": "Hindustan Petroleum Corporation Limited",
+            "digitalStatus": "Published"
+        },
+
+            {
+                "name": "M/s Radha Rama Petroleum",
+                "address": "Ground Floor, SV Road, Dahisar East, Near Thakur Ramnarayan College, Mumbai, Maharashtra, 400068",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.25447295,
+                "lng": 72.867035,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-radha-rama-petroleum-petrol-pump-dahisar-east-mumbai-387732/Home"
+            },
+            {
+                "name": "Parkar Bros",
+                "address": "Tarapore Tower, Adarsh Nagar, Andheri West,, Mumbai, Maharashtra, 400053",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.14601197,
+                "lng": 72.830018,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-parkar-bros-petrol-pump-andheri-west-mumbai-387777/Home"
+            },
+            {
+                "name": "M/s Karfule Private Ltdm Ballard Estate",
+                "address": "Ground Floor, Sprott Road, Ballard Estate,, Mumbai, Maharashtra, 400038",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.93584552,
+                "lng": 72.840667,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-karfule-private-ltd-ballard-estate-petrol-pump-ballard-estate-mumbai-387778/Home"
+            },
+            {
+                "name": "M/s Chaman Automobiles, Reay Road",
+                "address": "No 277, Reay Road, Dockyard Station, Mumbai, Maharashtra, 400010",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.9686401,
+                "lng": 72.845540,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-chaman-automobiles-reay-road-petrol-pump-dockyard-station-mumbai-387793/Home"
+            },
+            {
+                "name": "HP Service Center, NS Road",
+                "address": "No 45, HP Apartments, Napean Sea Road, Near Priyadarshini park, Mumbai, Maharashtra, 400026",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.960543,
+                "lng": 72.801106,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-hp-service-center-ns-road-petrol-pump-napean-sea-road-mumbai-387795/Home"
+            },
+            {
+                "name": "M/s Auto Care Centre, Mahul Refiner",
+                "address": "Ground Floor, Mahul, Mumbai, Maharashtra, 400074",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.0114601,
+                "lng": 72.901446,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-auto-care-centre-mahul-refiner-petrol-pump-mahul-mumbai-387811/Home"
+            },
+            {
+                "name": "M/s Bombay Taxi Assoc., Haines Road",
+                "address": "Ground Floor, Dr E Moses Road, Mahalaxmi, Near Famous Studio, Mumbai, Maharashtra, 400011",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.9878801,
+                "lng": 72.823367,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-bombay-taxi-assoc-haines-road-petrol-pump-mahalaxmi-mumbai-387838/Home"
+            },
+            {
+                "name": "M/s LN Pujara & Co, PD Mello",
+                "address": "No 95, PD Mello Road, Carnac Bunder, Masjid Bunder East, Opposite Vyapar Bhavan, Mumbai, Maharashtra, 400009",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.951501,
+                "lng": 72.841476,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-ln-pujara-co-pd-mello-petrol-pump-masjid-bunder-east-mumbai-387977/Home"
+            },
+            {
+                "name": "Mukand Super Services",
+                "address": "Ground Floor, SV Road, Jogeshwari West, Mumbai, Maharashtra, 400102",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.1427154,
+                "lng": 72.842776,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-mukand-super-services-petrol-pump-jogeshwari-west-mumbai-388029/Home"
+            },
+            {
+                "name": "M/s Mumbai Taxi Asan Coop Cons Soc",
+                "address": "Ground Floor, CST Road, LBS Marg, Kurla West, Near Best Depot, Mumbai, Maharashtra, 400070",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.076291,
+                "lng": 72.877415,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-mumbai-taxi-assn-coop-cons-soc-petrol-pump-kurla-west-mumbai-388123/Home"
+            },
+            {
+                "name": "M/s Star Service Station, Ghatkopar",
+                "address": "Ground Floor, Kerawala Estate, Agra Road, LBS Marg, Ghatkopar West, Mumbai, Maharashtra, 400086",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 19.08604538,
+                "lng": 72.895016,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-star-service-station-ghatkopar-petrol-pump-ghatkopar-west-mumbai-388247/Home"
+            },
+            {
+                "name": "M/s Hind Automobiles, Dongri",
+                "address": "No 70, Sandhurst Road, Chinchbunder Naka, Dongri, Mumbai, Maharashtra, 400009",
+                "state": "Maharashtra",
+                "brandName": "Hindustan Petroleum Corporation Limited",
+                "digitalStatus": "Published",
+                "lat": 18.95843916,
+                "lng": 72.837673,
+                "Link": "https://petrolpump.hpretail.in/hindustan-petroleum-corporation-limited-m-s-hind-automobiles-dongri-petrol-pump-dongri-mumbai-388700/Home"
+            }
+        ]
+
+
+        const MetricsModule = (function() {
+            function calculateMetrics(locationData) {
+                // Total stations
+                const totalStations = locationData.length;
+                
+                // Get unique regions
+                const regions = [...new Set(locationData.map(loc => loc.region))];
+                const totalRegions = regions.length;
+                
+                // Calculate average traffic index
+                const avgTraffic = Math.round(
+                    locationData.reduce((sum, loc) => sum + loc.trafficIndex, 0) / totalStations
+                );
+                
+                // Calculate digital coverage percentage
+                const digitalActive = locationData.filter(loc => loc.digitalStatus === "Active").length;
+                const digitalCoverage = Math.round((digitalActive / totalStations) * 100);
+                
+                return {
+                    totalStations,
+                    totalRegions,
+                    avgTraffic,
+                    digitalCoverage,
+                    regions
+                };
+            }
+            
+            function updateMetricsDisplay(metrics) {
+                document.getElementById('total-stations').textContent = metrics.totalStations;
+               // document.getElementById('total-regions').textContent = metrics.totalRegions;
+               // document.getElementById('avg-traffic').textContent = metrics.avgTraffic;
+                //document.getElementById('digital-coverage').textContent = `${metrics.digitalCoverage}%`;
+            }
+            
+            function populateRegionFilter(regions) {
+                const regionSelect = document.getElementById('region-select');
+                // Clear existing options except the first one
+                while (regionSelect.options.length > 1) {
+                    regionSelect.remove(1);
+                }
+                
+                // Add region options
+                regions.forEach(region => {
+                    const option = document.createElement('option');
+                    option.value = region;
+                    option.textContent = region;
+                    regionSelect.appendChild(option);
+                });
+            }
+            
+            return {
+                calculateMetrics,
+                updateMetricsDisplay,
+                populateRegionFilter
+            };
+        })();
+
+        const MapModule = (function() {
+            let map, markerCluster, markersList = [];
+
+            function initialize(elementId, initialView) {
+                try {
+                    map = L.map(elementId).setView(initialView, 8);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '&copy; OpenStreetMap contributors'
+                    }).addTo(map);
+                    markerCluster = L.markerClusterGroup();
+                    return true;
+                } catch (error) {
+                    console.error("Map initialization failed:", error);
+                    const mapElement = document.getElementById(elementId);
+                    mapElement.innerHTML = '<div class="map-error"><p>Failed to load map. Please check your internet connection and refresh.</p></div>';
+                    return false;
+                }
+            }
+
+            function createMarkers(locationData) {
+                markersList = locationData.map((loc, index) => {
+                    // Change marker color based on digital status
+                    const bgColor = loc.digitalStatus === "Active" ? "#888888" : "#0041A3";
+                    const customIcon = L.divIcon({
+                        html: `<div style="background-color: ${bgColor}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${index + 1}</div>`,
+                        className: '',
+                        iconSize: [30, 30]
+                    });
+                    const marker = L.marker([loc.lat, loc.lng], { icon: customIcon });
+                    marker.bindPopup(`
+                        <div class='custom-popup'>
+                            <div class='location-title'>${loc.name}</div>
+                            <div class='location-address'>${loc.address}</div>
+                            <div style="margin: 5px 0; font-size: 0.9em;">
+                                <strong>State:</strong> ${loc.state}<br>
+                                <strong>Digital Status:</strong> ${loc.digitalStatus}
+                            </div>
+                            <a class='location-link' href='${loc.Link}' target='_blank'>
+                                <i class="fas fa-external-link-alt" style="color:#ffffff"></i> View Microsite
+                            </a>
+                        </div>
+                    `);
+                    return marker;
+                });
+                return markersList;
+            }
+
+            function addMarkersToMap(useCluster = true) {
+                if (useCluster) {
+                    markersList.forEach(marker => markerCluster.addLayer(marker));
+                    map.addLayer(markerCluster);
+                } else {
+                    markersList.forEach(marker => marker.addTo(map));
+                }
+                const group = useCluster ? markerCluster : L.featureGroup(markersList);
+                
+                // More precise fitting for Maharashtra
+                map.fitBounds(group.getBounds(), { 
+                    padding: [20, 20],  // Tighter padding
+                    maxZoom: 10,  // Prevent zooming too close
+                    animate: true  // Smooth animation
+                });
+            }    
+            function toggleClustering(useCluster) {
+                markersList.forEach(marker => {
+                    map.removeLayer(marker);
+                    markerCluster.removeLayer(marker);
+                });
+                if (useCluster) {
+                    markersList.forEach(marker => markerCluster.addLayer(marker));
+                    map.addLayer(markerCluster);
+                } else {
+                    markersList.forEach(marker => marker.addTo(map));
+                }
+            }
+
+            function animateMarkers(isClusterEnabled, onComplete) {
+                markersList.forEach(marker => {
+                    map.removeLayer(marker);
+                    markerCluster.removeLayer(marker);
+                });
+                map.flyTo([19.0760, 72.8777], 13, { duration: 2 });
+                setTimeout(() => {
+                    let i = 0;
+                    const addMarker = () => {
+                        if (i < markersList.length) {
+                            if (isClusterEnabled) {
+                                markerCluster.addLayer(markersList[i]);
+                            } else {
+                                markersList[i].addTo(map);
+                            }
+                            UIModule.highlightListItem(i);
+                            i++;
+                            setTimeout(addMarker, 300);
+                        } else {
+                            const group = isClusterEnabled ? markerCluster : L.featureGroup(markersList);
+                            map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                            if (onComplete) onComplete();
+                        }
+                    };
+                    addMarker();
+                }, 2000);
+            }
+
+
+            function resetView() {
+                markersList.forEach(marker => {
+                    map.removeLayer(marker);
+                    markerCluster.removeLayer(marker);
+                });
+                const isClusterEnabled = document.getElementById('clusterCheckbox').checked;
+                if (isClusterEnabled) {
+                    markersList.forEach(marker => markerCluster.addLayer(marker));
+                    map.addLayer(markerCluster);
+                } else {
+                    markersList.forEach(marker => marker.addTo(map));
+                }
+                const group = isClusterEnabled ? markerCluster : L.featureGroup(markersList);
+                map.fitBounds(group.getBounds(), { padding: [50, 50] });
+            }
+
+            function focusOnLocation(index) {
+                map.setView([locations[index].lat, locations[index].lng], 15);
+                markersList[index].openPopup();
+            }
+
+            function filterByRegion(region, visibleLocations) {
+                markersList.forEach(marker => {
+                    map.removeLayer(marker);
+                    markerCluster.removeLayer(marker);
+                });
+                
+                const isClusterEnabled = document.getElementById('clusterCheckbox').checked;
+                const filteredMarkers = markersList.filter((_, index) => 
+                    visibleLocations.includes(index)
+                );
+                
+                if (filteredMarkers.length > 0) {
+                    if (isClusterEnabled) {
+                        filteredMarkers.forEach(marker => markerCluster.addLayer(marker));
+                        map.addLayer(markerCluster);
+                    } else {
+                        filteredMarkers.forEach(marker => marker.addTo(map));
+                    }
+                    
+                    const group = isClusterEnabled ? markerCluster : L.featureGroup(filteredMarkers);
+                    map.fitBounds(group.getBounds(), { padding: [50, 50] });
+                } else {
+                    // If no markers match, show a centered view of Mumbai
+                    map.setView([19.0760, 72.8777], 10);
+                }
+            }
+
+            return {
+                initialize,
+                createMarkers,
+                addMarkersToMap,
+                toggleClustering,
+                animateMarkers,
+                resetView,
+                focusOnLocation,
+                filterByRegion
+            };
+        })();
+         
+        const UIModule = (function() {
+            let listContainer, searchBox, playButton, resetButton, clusterCheckbox, regionSelect;
+            
+            function initialize() {
+                listContainer = document.getElementById('locationList');
+                searchBox = document.getElementById('search-box');
+                playButton = document.getElementById('playButton');
+                resetButton = document.getElementById('resetButton');
+                clusterCheckbox = document.getElementById('clusterCheckbox');
+                regionSelect = document.getElementById('region-select');
+                return !!listContainer && !!searchBox && !!playButton && !!resetButton && !!clusterCheckbox && !!regionSelect;
+            }
+            
+            function createLocationList(locationData, onItemClick) {
+                const fragment = document.createDocumentFragment();
+                locationData.forEach((loc, index) => {
+                    const li = document.createElement('li');
+                    li.dataset.index = index;
+                    li.dataset.region = loc.region;
+                    
+                    // Indicate digital status with a colored dot
+                    const statusDot = loc.digitalStatus === "Active" ? 
+                        '<span style="color: #2ecc71;">●</span>' : 
+                        '<span style="color: #95a5a6;">●</span>';
+                    
+                    li.innerHTML = `
+                        <strong>${index + 1}. ${loc.brandName}</strong> ${statusDot}<br>
+                        <!--<small>${loc.region} | Traffic: ${loc.trafficIndex}/100</small><br>-->
+                        <small>${loc.state} | </small>
+                        <small>${loc.address.substring(0, 40)}...</small><br>
+                        <a href="${loc.Link}" target="_blank" aria-label="View microsite for ${loc.name}">
+                            <i class="fas fa-external-link-alt" aria-hidden="true"></i> View Microsite
+                        </a>
+                    `;
+                    li.addEventListener('click', function() {
+                        if (onItemClick) onItemClick(index);
+                        highlightListItem(index);
+                    });
+                    fragment.appendChild(li);
+                });
+                listContainer.appendChild(fragment);
+            }
+            
+            function setupSearch(locationData) {
+                searchBox.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const listItems = document.querySelectorAll('.location-list li');
+                    
+                    const visibleIndices = [];
+                    
+                    listItems.forEach((item, index) => {
+                        const locationName = locationData[index].name.toLowerCase();
+                        const locationAddress = locationData[index].address.toLowerCase();
+                        const locationRegion = locationData[index].region.toLowerCase();
+                        
+                        if (locationName.includes(searchTerm) || 
+                            locationAddress.includes(searchTerm) ||
+                            locationRegion.includes(searchTerm)) {
+                            item.style.display = '';
+                            visibleIndices.push(index);
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Filter the map to show only visible locations
+                    MapModule.filterByRegion('search', visibleIndices);
+                });
+            }
+            
+            function setupRegionFilter(locationData) {
+                regionSelect.addEventListener('change', function() {
+                    const selectedRegion = this.value;
+                    const listItems = document.querySelectorAll('.location-list li');
+                    
+                    const visibleIndices = [];
+                    
+                    listItems.forEach((item, index) => {
+                        if (selectedRegion === 'all' || locationData[index].region === selectedRegion) {
+                            item.style.display = '';
+                            visibleIndices.push(index);
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Reset search when changing region
+                    searchBox.value = '';
+                    
+                    // Filter the map to show only visible locations
+                    MapModule.filterByRegion(selectedRegion, visibleIndices);
+                });
+            }
+            
+            function setupSidebarToggle() {
+                const sidebarToggle = document.getElementById('sidebar-toggle');
+                const sidebar = document.getElementById('sidebar');
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('sidebar-collapsed');
+                    this.classList.toggle('toggle-collapsed');
+                    const icon = this.querySelector('i');
+                    if (sidebar.classList.contains('sidebar-collapsed')) {
+                        icon.classList.remove('fa-chevron-left');
+                        icon.classList.add('fa-chevron-right');
+                    } else {
+                        icon.classList.remove('fa-chevron-right');
+                        icon.classList.add('fa-chevron-left');
+                    }
+                });
+            }
+            
+            function highlightListItem(index) {
+                const listItems = document.querySelectorAll('.location-list li');
+                listItems.forEach(item => item.classList.remove('highlight'));
+                if (listItems[index]) {
+                    listItems[index].classList.add('highlight');
+                    listItems[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+            
+            function setupButtons(onPlay, onReset, onClusterToggle) {
+                playButton.addEventListener('click', function() {
+                    playButton.disabled = true;
+                    resetButton.disabled = true;
+                    playButton.innerHTML = '<div class="spinner"></div>';
+                    playTriumphSound();
+                    if (onPlay) onPlay(() => {
+                        playButton.innerHTML = '<i class="fas fa-play"></i>';
+                        playButton.disabled = false;
+                        resetButton.disabled = false;
+                    });
+                });
+                
+                resetButton.addEventListener('click', function() {
+                    if (onReset) onReset();
+                    // Don't reset clustering checkbox anymore since it should stay as user preference
+                    document.querySelectorAll('.location-list li').forEach(item => {
+                        item.classList.remove('highlight');
+                        item.style.display = '';
+                    });
+                    searchBox.value = '';
+                    regionSelect.value = 'all';
+                });
+                
+                clusterCheckbox.addEventListener('change', function() {
+                    if (onClusterToggle) onClusterToggle(this.checked);
+                });
+            }
+            
+            function playTriumphSound() {
+                const triumphSound = document.getElementById('triumphSound');
+                if (triumphSound) {
+                    triumphSound.currentTime = 0;
+                    triumphSound.play().catch(e => console.warn("Audio playback failed:", e));
+                }
+            }
+            
+            function hideLoadingOverlay() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                loadingOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    loadingOverlay.style.display = 'none';
+                }, 500);
+            }
+            
+            return {
+                initialize,
+                createLocationList,
+                setupSearch,
+                setupSidebarToggle,
+                setupButtons,
+                highlightListItem,
+                hideLoadingOverlay,
+                setupRegionFilter
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const mapInitialized = MapModule.initialize('map', [19.0760, 76.5], 7); 
+            const uiInitialized = UIModule.initialize();
+            
+            if (!mapInitialized || !uiInitialized) {
+                console.error("Failed to initialize application");
+                document.getElementById('loadingOverlay').innerHTML = '<div class="loading-content"><p>Failed to load application. Please refresh the page.</p></div>';
+                return;
+            }
+            
+            // Calculate metrics
+            const metrics = MetricsModule.calculateMetrics(locations);
+            MetricsModule.updateMetricsDisplay(metrics);
+            MetricsModule.populateRegionFilter(metrics.regions);
+            
+            // Initialize map with markers
+            MapModule.createMarkers(locations);
+            const isClusterEnabled = document.getElementById('clusterCheckbox').checked;
+            MapModule.addMarkersToMap(isClusterEnabled);
+            
+            // Setup UI components
+            UIModule.createLocationList(locations, (index) => {
+                MapModule.focusOnLocation(index);
+            });
+            UIModule.setupSearch(locations);
+            UIModule.setupSidebarToggle();
+            UIModule.setupRegionFilter(locations);
+            
+            UIModule.setupButtons(
+                (onComplete) => {
+                    MapModule.animateMarkers(
+                        document.getElementById('clusterCheckbox').checked,
+                        onComplete
+                    );
+                },
+                () => {
+                    MapModule.resetView();
+                },
+                (isClusterEnabled) => {
+                    MapModule.toggleClustering(isClusterEnabled);
+                }
+            );
+            
+            setTimeout(() => {
+                UIModule.hideLoadingOverlay();
+            }, 1500);
+        });
+</script>
+</body>
+
+</html>
