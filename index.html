@@ -574,14 +574,14 @@
             });
             
             // Enter button click handler
-            enterBtn.addEventListener('click', function() {
-                introOverlay.classList.add('hidden');
+            // enterBtn.addEventListener('click', function() {
+            //     introOverlay.classList.add('hidden');
                 
-                // Redirect to transition page, which will then go to the dashboard
-                setTimeout(function() {
-                    window.location.href = 'transition.html'; // This will redirect to the transition page
-                }, 800);
-            });
+            //     // Redirect to transition page, which will then go to the dashboard
+            //     setTimeout(function() {
+            //         window.location.href = 'transition.html'; // This will redirect to the transition page
+            //     }, 800);
+            // });
             // Function to get the current date in a formatted string
             function getCurrentDate() {
                 const months = [
@@ -592,7 +592,7 @@
                 const today = new Date();
                 const month = months[today.getMonth()];
                 const day = today.getDate();
-                const year = today.getFullYear();alert(day);
+                const year = today.getFullYear();console.log(year);
                 
                 return `${month} ${day}, ${year}`;
             }
