@@ -83,8 +83,8 @@
             position: relative;
         }
         .logo-header {
-            position: fixed;
-            top: 30px;
+            position: absolute;
+            top: 872px;
             left: 40px;
             z-index: 1100;
             opacity: 0;
@@ -704,7 +704,24 @@
                 dateElement.textContent = getCurrentDate();
             }
         });
+//
+        const music = document.getElementById('bg-music');
 
+            const startMusic = () => {
+            music.play()
+                .then(() => {
+                console.log("Music started!");
+                })
+                .catch((err) => {
+                console.log("Autoplay failed:", err);
+                });
+
+            // Remove the event listener so it only triggers once
+            window.removeEventListener('click', startMusic);
+            };
+
+            // Listen for any click on the page
+            window.addEventListener('click', startMusic);
     </script>
 </body>
 </html>
