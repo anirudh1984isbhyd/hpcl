@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* General styles for all devices */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -40,7 +41,6 @@
             transition: all 0.8s ease-in-out;
             padding-bottom: 80px;
         }
-        
 
         .intro-bg {
             position: absolute;
@@ -54,7 +54,7 @@
             filter: brightness(0.2) blur(2px);
             z-index: -2;
         }
-        
+
         .bg-wave {
             position: absolute;
             top: 0;
@@ -75,6 +75,8 @@
             padding: 0 20px;
             position: relative;
             z-index: 2;
+            overflow: auto;
+            top: 35px;
         }
         .logos {
             margin-bottom: 50px;
@@ -177,7 +179,7 @@
             transform: translateY(30px);
             animation: fadeInUp 0.8s ease-out forwards;
             animation-delay: 0.9s;
-            margin-bottom: 60px;
+            margin-bottom: 25px;
         }
         .pillars {
             display: grid;
@@ -418,6 +420,98 @@
             opacity: 0 !important;
             pointer-events: none;
         }
+
+        /* Responsive Design */
+
+        /* Projector (large screens) */
+        @media (min-width: 1920px) {
+            .title {
+                font-size: 96px;
+            }
+            .subtitle {
+                font-size: 36px;
+            }
+            .pillar {
+                padding: 40px;
+            }
+            .cta-button {
+                font-size: 20px;
+                padding: 20px 50px;
+            }
+            .intro-content{
+                width: 100%;
+                max-width: 2000px;
+            }
+            .pillars-container {
+                width: 100%;
+                max-width :2000px;
+            }
+           .pillars-container .pillar-desc{
+                font-size: 27px;
+            }
+            .pillars-container .pillar-title {
+                font-size: 33px ;
+            }
+            .cta-button {
+                font-size: 25px;
+            }
+
+        }
+
+        /* Desktop (medium screens) */
+        @media (min-width: 1024px) and (max-width: 1919px) {
+            .title {
+                font-size: 69px;
+            }
+            .subtitle {
+                font-size: 28px;
+            }
+            .pillar {
+                padding: 30px;
+            }
+            .cta-button {
+                font-size: 18px;
+                padding: 18px 40px;
+            }
+        }
+
+        /* Tablets (iPads) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .title {
+                font-size: 48px;
+            }
+            .subtitle {
+                font-size: 22px;
+            }
+            
+            .pillar {
+                padding: 20px;
+            }
+            .cta-button {
+                font-size: 16px;
+                padding: 16px 30px;
+            }
+        }
+
+        /* Mobile devices */
+        @media (max-width: 767px) {
+            .title {
+                font-size: 36px;
+            }
+            .subtitle {
+                font-size: 18px;
+            }
+            .pillars {
+                grid-template-columns: 1fr; /* Single column layout */
+            }
+            .pillar {
+                padding: 15px;
+            }
+            .cta-button {
+                font-size: 14px;
+                padding: 12px 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -605,3 +699,5 @@
         });
 
     </script>
+</body>
+</html>
