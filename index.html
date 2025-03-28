@@ -75,8 +75,8 @@
             padding: 0 20px;
             position: relative;
             z-index: 2;
-            overflow: auto;
             top: 75px;
+            overflow: auto;
         }
         .logos {
             margin-bottom: 50px;
@@ -441,6 +441,7 @@
             .intro-content{
                 width: 100%;
                 max-width: 2000px;
+                overflow: hidden;
             }
             .pillars-container {
                 width: 100%;
@@ -475,6 +476,9 @@
             .cta-button {
                 font-size: 18px;
                 padding: 18px 40px;
+            }
+            .intro-content{
+                overflow: hidden;
             }
         }
 
@@ -517,6 +521,41 @@
             .hpcl-logo-wrapper{
                 width: 195px;
                 padding: 9px;
+               
+            }
+        }
+
+        /* Small Mobile devices */
+        @media (max-width: 452px) {
+            .title {
+                font-size: 36px;
+            }
+            .subtitle {
+                font-size: 18px;
+            }
+            .pillars {
+                grid-template-columns: 1fr; /* Single column layout */
+            }
+            .pillar {
+                padding: 15px;
+            }
+            .cta-button {
+                font-size: 14px;
+                padding: 12px 20px;
+            }
+            .hpcl-logo-wrapper{
+                width: 170px;
+                padding: 9px;
+                margin-left: -30px;
+            }
+            .date{
+                top:35px;
+                right:15px;
+            }
+            .branding{
+                position: relative;
+                top: 76px;
+                right: 10px;
             }
         }
     </style>
@@ -540,7 +579,6 @@
         
         <div class="intro-content">
             <audio id="bg-music" src="Button_Launch.mp4" preload="auto" loop></audio>
-
             <h1 class="title">Hyperlocal Search Marketing</h1>
             <h2 class="subtitle">Empowering HPCL dealerships to succeed in a digital-first battlefield</h2>
             
@@ -706,24 +744,23 @@
                 dateElement.textContent = getCurrentDate();
             }
         });
-//
         const music = document.getElementById('bg-music');
+//
+        const startMusic = () => {
+        music.play()
+            .then(() => {
+            console.log("Music started!");
+            })
+            .catch((err) => {
+            console.log("Autoplay failed:", err);
+            });
 
-            const startMusic = () => {
-            music.play()
-                .then(() => {
-                console.log("Music started!");
-                })
-                .catch((err) => {
-                console.log("Autoplay failed:", err);
-                });
+        // Remove the event listener so it only triggers once
+        window.removeEventListener('click', startMusic);
+        };
 
-            // Remove the event listener so it only triggers once
-            window.removeEventListener('click', startMusic);
-            };
-
-            // Listen for any click on the page
-            window.addEventListener('click', startMusic);
+        // Listen for any click on the page
+        window.addEventListener('click', startMusic);
     </script>
 </body>
 </html>
