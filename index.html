@@ -585,6 +585,7 @@
         <div class="date">March 26, 2025</div>
         
         <div class="intro-content">
+            <audio id="bg-music" src="Button_Launch.mp4" preload="auto" loop></audio>
             <h1 class="title">Hyperlocal Search Marketing</h1>
             <h2 class="subtitle">Empowering HPCL dealerships to succeed in a digital-first battlefield</h2>
             
@@ -750,7 +751,23 @@
                 dateElement.textContent = getCurrentDate();
             }
         });
+const music = document.getElementById('bg-music');
 
+            const startMusic = () => {
+            music.play()
+                .then(() => {
+                console.log("Music started!");
+                })
+                .catch((err) => {
+                console.log("Autoplay failed:", err);
+                });
+
+            // Remove the event listener so it only triggers once
+            window.removeEventListener('click', startMusic);
+            };
+
+            // Listen for any click on the page
+            window.addEventListener('click', startMusic);
     </script>
 </body>
 </html>
